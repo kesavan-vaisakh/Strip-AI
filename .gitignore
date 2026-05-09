@@ -1,0 +1,27 @@
+# Local SDK path — contains your machine-specific path
+local.properties
+
+# Gradle build outputs and caches
+.gradle/
+build/
+app/build/
+
+# Android Studio project files
+*.iml
+.idea/
+*.ipr
+*.iws
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Keystore files (never commit signing keys)
+*.jks
+*.keystore
+
+# Proguard generated files
+proguard/
+
+# Generated files
+app/src/main/assets/
