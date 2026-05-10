@@ -1,10 +1,10 @@
 package com.stripai.app.ui
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.widget.Toast
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -726,20 +726,21 @@ private fun AdbCopyButton(
     context: Context,
     modifier: Modifier = Modifier,
 ) {
-    val command = "adb shell pm disable-user --user 0 $packageName"
     TextButton(
         onClick = {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("adb command", command))
-            Toast.makeText(context, "ADB command copied", Toast.LENGTH_SHORT).show()
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", packageName, null)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
         },
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Text(
-            text = "Copy ADB disable",
+            text = "Disable →",
             style = MaterialTheme.typography.labelMedium,
-            color = TextMuted,
+            color = RedAccent,
         )
     }
 }
