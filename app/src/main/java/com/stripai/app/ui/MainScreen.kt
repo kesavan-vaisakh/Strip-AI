@@ -1,6 +1,10 @@
 package com.stripai.app.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -30,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.stripai.app.scanner.AppScanResult
+import com.stripai.app.scanner.DownloadedModel
 import com.stripai.app.scanner.RiskLevel
 import com.stripai.app.scanner.ScanResult
 import com.stripai.app.ui.theme.*
@@ -233,7 +238,15 @@ private fun ResultsScreen(result: ScanResult, completedAtMs: Long, onRescanClick
             item { Spacer(Modifier.height(4.dp)) }
         }
 
-        if (grouped.isEmpty() && result.installedKnownAiPackages.isEmpty()) {
+        if (result.downloadedModels.isNotEmpty()) {
+            item { SectionHeader("Downloaded to Device", result.downloadedModels.size) }
+            items(result.downloadedModels) { model ->
+                DownloadedModelCard(model)
+            }
+            item { Spacer(Modifier.height(4.dp)) }
+        }
+
+        if (grouped.isEmpty() && result.installedKnownAiPackages.isEmpty() && result.downloadedModels.isEmpty()) {
             item { CleanDeviceCard() }
         }
 
@@ -434,6 +447,7 @@ private fun SectionHeader(title: String, count: Int) {
 
 @Composable
 private fun KnownAiPackageCard(friendlyName: String, packageName: String) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -450,7 +464,7 @@ private fun KnownAiPackageCard(friendlyName: String, packageName: String) {
                 .background(RiskRuntimeOnly),
         )
         Spacer(Modifier.width(12.dp))
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = friendlyName,
                 style = MaterialTheme.typography.bodyLarge,
@@ -463,6 +477,7 @@ private fun KnownAiPackageCard(friendlyName: String, packageName: String) {
                 fontFamily = FontFamily.Monospace,
             )
         }
+        AdbCopyButton(packageName = packageName, context = context)
     }
 }
 
@@ -642,6 +657,13 @@ private fun AppResultCard(app: AppScanResult) {
                         )
                     }
                 }
+
+                Spacer(Modifier.height(4.dp))
+                AdbCopyButton(
+                    packageName = app.packageName,
+                    context = LocalContext.current,
+                    modifier = Modifier.align(Alignment.End),
+                )
             }
         }
     }
@@ -694,6 +716,81 @@ private fun ErrorScreen(message: String, onRetry: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = RedAccent),
         ) {
             Text("Try Again")
+        }
+    }
+}
+
+@Composable
+private fun AdbCopyButton(
+    packageName: String,
+    context: Context,
+    modifier: Modifier = Modifier,
+) {
+    val command = "adb shell pm disable-user --user 0 $packageName"
+    TextButton(
+        onClick = {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("adb command", command))
+            Toast.makeText(context, "ADB command copied", Toast.LENGTH_SHORT).show()
+        },
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = "Copy ADB disable",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextMuted,
+        )
+    }
+}
+
+@Composable
+private fun DownloadedModelCard(model: DownloadedModel) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Surface)
+            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(RiskHigh),
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = model.fileName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = model.absolutePath,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextMuted,
+                fontFamily = FontFamily.Monospace,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = model.type,
+                style = MaterialTheme.typography.labelMedium,
+                color = RedAccent,
+            )
+            Text(
+                text = formatSize(model.sizeBytes),
+                style = MaterialTheme.typography.bodySmall,
+                color = TextMuted,
+            )
         }
     }
 }

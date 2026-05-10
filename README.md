@@ -81,7 +81,7 @@ app/src/main/java/com/stripai/app/
 
 ```bash
 # 1. Clone
-git clone <repo-url>
+git clone https://github.com/kesavan-vaisakh/Strip-AI.git
 cd strip-ai
 
 # 2. Point Gradle at your SDK

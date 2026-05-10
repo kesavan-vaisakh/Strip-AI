@@ -41,6 +41,13 @@ data class AppScanResult(
     val hasAi: Boolean get() = models.isNotEmpty() || runtimes.isNotEmpty()
 }
 
+data class DownloadedModel(
+    val fileName: String,
+    val absolutePath: String,
+    val sizeBytes: Long,
+    val type: String,
+)
+
 data class KnownAiPackage(
     val packageName: String,
     val friendlyName: String,
@@ -50,6 +57,7 @@ data class KnownAiPackage(
 data class ScanResult(
     val apps: List<AppScanResult>,
     val knownAiPackages: List<KnownAiPackage>,
+    val downloadedModels: List<DownloadedModel> = emptyList(),
     val totalAppsScanned: Int,
     val scanDurationMs: Long,
 ) {

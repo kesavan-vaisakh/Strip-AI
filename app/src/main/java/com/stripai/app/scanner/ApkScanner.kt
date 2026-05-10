@@ -46,9 +46,13 @@ class ApkScanner(private val context: Context) {
             )
         }
 
+        onProgress(Progress(total, total, "Checking downloaded files…"))
+        val downloadedModels = StorageScanner(context).scanDownloadedModels()
+
         ScanResult(
             apps = results,
             knownAiPackages = knownAiPackages,
+            downloadedModels = downloadedModels,
             totalAppsScanned = total,
             scanDurationMs = System.currentTimeMillis() - startMs,
         )
