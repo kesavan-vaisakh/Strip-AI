@@ -76,6 +76,15 @@ class ApkScanner(private val context: Context) {
 
                         when {
                             ModelSignature.isModelFile(name, size) -> {
+                                val ext = name.lowercase().substringAfterLast('.', "")
+                                val header = try {
+                                    zip.getInputStream(entry).use { stream ->
+                                        val buf = ByteArray(8)
+                                        val read = stream.read(buf)
+                                        if (read > 0) buf.copyOf(read) else ByteArray(0)
+                                    }
+                                } catch (_: Exception) { ByteArray(0) }
+                                if (!ModelSignature.verifyMagicBytes(ext, header)) continue
                                 val fileName = name.substringAfterLast('/')
                                 models.add(
                                     DetectedModel(

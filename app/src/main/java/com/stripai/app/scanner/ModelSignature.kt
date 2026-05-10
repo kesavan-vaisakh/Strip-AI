@@ -2,29 +2,49 @@ package com.stripai.app.scanner
 
 object ModelSignature {
 
-    // File extensions that unambiguously identify ML model files
+    // File extensions that identify ML model files
     val MODEL_EXTENSIONS = setOf(
-        "tflite",   // TensorFlow Lite
-        "lite",     // TensorFlow Lite (alternate extension)
-        "onnx",     // Open Neural Network Exchange
-        "pt",       // PyTorch
-        "pth",      // PyTorch
+        "tflite",    // TensorFlow Lite
+        "lite",      // TensorFlow Lite (alternate extension)
+        "onnx",      // Open Neural Network Exchange
+        "pt",        // PyTorch
+        "pth",       // PyTorch
         "torchscript",
-        "ptl",      // PyTorch Lite (mobile)
-        "dlc",      // Qualcomm Neural Processing SDK
-        "mnn",      // Alibaba MNN
-        "ncnn",     // Tencent NCNN
-        "tmfile",   // Tengine
-        "ms",       // MindSpore Lite
-        "nb",       // PaddlePaddle (NeuroPilot)
-        "paddle",   // PaddlePaddle
-        "pdmodel",  // PaddlePaddle model
-        "hef",      // Hailo
-        "mlmodel",  // Apple CoreML (unlikely in APKs but possible)
+        "ptl",       // PyTorch Lite (mobile)
+        "pte",       // ExecuTorch / PyTorch Edge
+        "gguf",      // GGUF — on-device LLMs (Llama, Gemma, Phi, etc.)
+        "ggml",      // GGML (predecessor to GGUF)
+        "model",     // MediaPipe / generic
+        "binarypb",  // MediaPipe serialised protobuf
+        "dlc",       // Qualcomm Neural Processing SDK
+        "mnn",       // Alibaba MNN
+        "ncnn",      // Tencent NCNN
+        "tmfile",    // Tengine
+        "ms",        // MindSpore Lite
+        "nb",        // PaddlePaddle (NeuroPilot)
+        "paddle",    // PaddlePaddle
+        "pdmodel",   // PaddlePaddle model
+        "hef",       // Hailo
+        "mlmodel",   // Apple CoreML (unlikely in APKs but possible)
         "mlpackage",
         "caffemodel",
         "prototxt",
-        "param",    // NCNN param file
+        "param",     // NCNN param file
+    )
+
+    // Magic byte signatures — checked against the first 8 bytes of the file
+    // Key: file extension, Value: pair of (byte offset, expected bytes)
+    val MAGIC_BYTES: Map<String, Pair<Int, ByteArray>> = mapOf(
+        // "TFL3" at offset 4
+        "tflite" to (4 to byteArrayOf(0x54, 0x46, 0x4C, 0x33)),
+        "lite"   to (4 to byteArrayOf(0x54, 0x46, 0x4C, 0x33)),
+        // "GGUF" at offset 0
+        "gguf"   to (0 to byteArrayOf(0x47, 0x47, 0x55, 0x46)),
+        "ggml"   to (0 to byteArrayOf(0x67, 0x67, 0x6D, 0x6C)),
+        // PK zip header (PyTorch zip-based format) at offset 0
+        "pt"     to (0 to byteArrayOf(0x50, 0x4B)),
+        "pth"    to (0 to byteArrayOf(0x50, 0x4B)),
+        "ptl"    to (0 to byteArrayOf(0x50, 0x4B)),
     )
 
     // Patterns for .bin files that are likely ML weights (not generic binary data)
@@ -213,6 +233,14 @@ object ModelSignature {
         "com.qti.snapdragon.aisdk" to "Snapdragon AI SDK",
     )
 
+    // Returns true if the header bytes match the expected magic for this extension.
+    // Returns true when no magic is defined (extension alone is sufficient evidence).
+    fun verifyMagicBytes(ext: String, header: ByteArray): Boolean {
+        val (offset, expected) = MAGIC_BYTES[ext] ?: return true
+        if (header.size < offset + expected.size) return true // can't verify, give benefit of the doubt
+        return expected.indices.all { i -> header[offset + i] == expected[i] }
+    }
+
     fun isModelFile(entryName: String, sizeBytes: Long): Boolean {
         val lower = entryName.lowercase()
         val ext = lower.substringAfterLast('.', "")
@@ -237,6 +265,10 @@ object ModelSignature {
             "tflite", "lite" -> "TFLite"
             "onnx" -> "ONNX"
             "pt", "pth", "ptl", "torchscript" -> "PyTorch"
+            "pte" -> "ExecuTorch"
+            "gguf" -> "GGUF (LLM)"
+            "ggml" -> "GGML (LLM)"
+            "model", "binarypb" -> "MediaPipe"
             "dlc" -> "Qualcomm DLC"
             "mnn" -> "MNN"
             "ncnn" -> "NCNN"

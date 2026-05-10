@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -197,6 +198,7 @@ private fun AppScanResult.category(runtimeOnly: Boolean): AppCategory {
 
 @Composable
 private fun ResultsScreen(result: ScanResult, completedAtMs: Long, onRescanClick: () -> Unit) {
+    val context = LocalContext.current
     val appsWithModels = result.appsWithModels
     val appsRuntimeOnly = result.appsWithRuntimeOnly
 
@@ -244,6 +246,19 @@ private fun ResultsScreen(result: ScanResult, completedAtMs: Long, onRescanClick
 
         item {
             Spacer(Modifier.height(8.dp))
+            if (result.totalModelCount > 0) {
+                Button(
+                    onClick = { shareReport(context, result) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = RedAccent),
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Share Report", color = Color.White)
+                }
+                Spacer(Modifier.height(8.dp))
+            }
             OutlinedButton(
                 onClick = onRescanClick,
                 modifier = Modifier.fillMaxWidth(),
